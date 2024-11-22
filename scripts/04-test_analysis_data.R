@@ -12,58 +12,66 @@
 library(tidyverse)
 library(testthat)
 
-data <- read_csv("data/02-analysis_data/analysis_data.csv")
+cleaned_data = read_parquet("data/02-analysis_data/cleaned_lol_data.parquet")
 
 
-#### Test data ####
-# Test that the dataset has 151 rows - there are 151 divisions in Australia
-test_that("dataset has 151 rows", {
-  expect_equal(nrow(analysis_data), 151)
-})
+# Check if the dataset has 5 rows
+if (nrow(cleaned_data) == 470) {
+  message("Test Passed: The dataset has 5 rows.")
+} else {
+  stop("Test Failed: The dataset does not have 5 rows.")
+}
 
-# Test that the dataset has 3 columns
-test_that("dataset has 3 columns", {
-  expect_equal(ncol(analysis_data), 3)
-})
+# Check if the dataset has 3 columns
+if (ncol(cleaned_data) == 20) {
+  message("Test Passed: The dataset has 20 columns.")
+} else {
+  stop("Test Failed: The dataset does not have 20 columns.")
+}
 
-# Test that the 'division' column is character type
-test_that("'division' is character", {
-  expect_type(analysis_data$division, "character")
-})
+# Check if all values in the 'division' column are unique
+# if (n_distinct(cleaned_data$division) == nrow(cleaned_data)) {
+#   message("Test Passed: All values in 'division' are unique.")
+# } else {
+#   stop("Test Failed: The 'division' column contains duplicate values.")
+# }
 
-# Test that the 'party' column is character type
-test_that("'party' is character", {
-  expect_type(analysis_data$party, "character")
-})
+# Check if the 'state' column contains only valid Australian state names
+valid_positions <- c("jng", "sup", "top", "mid", "bot")
 
-# Test that the 'state' column is character type
-test_that("'state' is character", {
-  expect_type(analysis_data$state, "character")
-})
+if (all(cleaned_data$position %in% valid_positions)) {
+  message("Test Passed: The 'position' column contains only valid league of legend position.")
+} else {
+  stop("Test Failed: The 'position' column contains invalid league of legend position.")
+}
 
-# Test that there are no missing values in the dataset
-test_that("no missing values in dataset", {
-  expect_true(all(!is.na(analysis_data)))
-})
+valid_sides <- c("Blue", "Red")
 
-# Test that 'division' contains unique values (no duplicates)
-test_that("'division' column contains unique values", {
-  expect_equal(length(unique(analysis_data$division)), 151)
-})
+if (all(cleaned_data$side %in% valid_sides)) {
+  message("Test Passed: The 'party' column contains only valid party names.")
+} else {
+  stop("Test Failed: The 'party' column contains invalid party names.")
+}
 
-# Test that 'state' contains only valid Australian state or territory names
-valid_states <- c("New South Wales", "Victoria", "Queensland", "South Australia", "Western Australia", 
-                  "Tasmania", "Northern Territory", "Australian Capital Territory")
-test_that("'state' contains valid Australian state names", {
-  expect_true(all(analysis_data$state %in% valid_states))
-})
+# Check if there are any missing values in the dataset
+if (all(!is.na(cleaned_data))) {
+  message("Test Passed: The dataset contains no missing values.")
+} else {
+  stop("Test Failed: The dataset contains missing values.")
+}
 
-# Test that there are no empty strings in 'division', 'party', or 'state' columns
-test_that("no empty strings in 'division', 'party', or 'state' columns", {
-  expect_false(any(analysis_data$division == "" | analysis_data$party == "" | analysis_data$state == ""))
-})
+# Check if there are no empty strings in 'division', 'state', and 'party' columns
+if (all(cleaned_data$teamname != "" & cleaned_data$playername != "" & cleaned_data$champion != "")) {
+  message("Test Passed: There are no empty strings in 'teamname', 'playername', or 'champion'.")
+} else {
+  stop("Test Failed: There are empty strings in one or more columns.")
+}
 
-# Test that the 'party' column contains at least 2 unique values
-test_that("'party' column contains at least 2 unique values", {
-  expect_true(length(unique(analysis_data$party)) >= 2)
-})
+
+
+# Check if the 'party' column has at least two unique values
+if (n_distinct(cleaned_data$position) == 5) {
+  message("Test Passed: The 'party' column contains at least two unique values.")
+} else {
+  stop("Test Failed: The 'party' column contains less than two unique values.")
+}

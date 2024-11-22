@@ -1,13 +1,12 @@
 ---
-title: "My title"
-subtitle: "My subtitle if needed"
+title: "Forecasting League of Legends Player Performance through In-Game Metrics and Key Statistics"
+subtitle: "A Hybrid Model Predict the KDA for Bilibili Gaming (BLG) team players"
 author: 
-  - First author
-  - Another author
-thanks: "Code and data are available at: [https://github.com/RohanAlexander/starter_folder](https://github.com/RohanAlexander/starter_folder)."
+  - Colin Sihan Yang
+thanks: "Code and data are available at: [https://github.com/hoodiexxx/lol_win_rate_prediction](https://github.com/hoodiexxx/lol_win_rate_prediction)."
 date: today
 date-format: long
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
+abstract: "This paper develops a hybrid model to forecast the 2024 performance of Bilibili Gaming (BLG) team players by analyzing team statistics from the League of Legends Pro League (LPL). The model focuses on predicting the Kill-Death-Assist ratio (KDA) for individual players across different games, leveraging both traditional in-game metrics such as gold difference, kills, assists, and vision score, and advanced variables like total creep score (total CS) to provide a comprehensive view of player performance. By integrating machine learning techniques with esports-specific insights, this model forecasting player KDAs, identifying performance trends, but also offers a clear assessment of individual contributions to the team. It highlights top-performing players while identifying those whose performance may negatively impact the team's success. The findings offer actionable insights, enabling the BLG organization to make informed decisions on player contracts."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -20,20 +19,34 @@ bibliography: references.bib
 
 library(tidyverse)
 library(palmerpenguins)
+library(here)
+library(tibble)
+library(knitr)
+library(arrow)
 ```
+
+```{r}
+cleaned_lol_data = read_parquet(here("data/02-analysis_data/cleaned_lol_data.parquet"))
+```
+
+
 
 
 # Introduction
 
-Overview paragraph
+In recent years, esports has evolved into a global phenomenon, with professional gaming leagues such as the League of Legends Pro League (LPL) attracting millions of viewers and significant organizational investments. As the competitive landscape intensifies, teams and organizations increasingly rely on data-driven approaches to gain a strategic edge. Among these, predictive analytics has emerged as a powerful tool to evaluate player performance, optimize team strategies, and make informed management decisions.
 
-Estimand paragraph
+Bilibili Gaming (BLG), a prominent team in the LPL, faces the challenge of maintaining a competitive roster in the ever-changing meta of League of Legends. Accurate performance forecasting is critical for assessing individual player contributions, identifying areas for improvement, and making decisions about player contracts and roster changes. 
 
-Results paragraph
+This paper developing a hybrid model that leverages both traditional in-game metrics and advanced variables, such as total creep score (CS), to forecast player performance for BLG in the 2024 season. The model specifically focuses on predicting the Kill-Death-Assist ratio (KDA), a widely accepted indicator of individual performance, across various matches. Finally offers actionable insights into player roles and impacts, highlighting those who can consistently carry games and identifying players whose performance may not justify their perceived value.
 
-Why it matters paragraph
+The remainder of this paper is structured as follows: @sec-data provides an overview of the data.
 
-Telegraphing paragraph: The remainder of this paper is structured as follows. @sec-data....
+the data gathering and analysis is done in R [@citeR] with the following packages: knitr [@knitr], tidyverse [@tidyverse], ggplot2 [@ggplot2], dplyr [@dplyr], arrow [@arrow], here [@here], and Rstan [@Rstan]
+
+## Estimand
+
+the estimand for this research paper is the predicted Kill-Death-Assist ratio (KDA) for the BLG team players. The prediction is based on quantifying various in-game factors, including total cs, gold earned, vision score, damage to champion, which are used as predictors.
 
 
 
@@ -42,15 +55,228 @@ Telegraphing paragraph: The remainder of this paper is structured as follows. @s
 
 # Data {#sec-data}
 
-## Overview
-
-We use the statistical programming language R [@citeR].... Our data [@shelter].... Following @tellingstories, we consider...
-
-Overview text
 
 ## Measurement
 	
-Some paragraphs about how we go from a phenomena in the world to an entry in the dataset.
+The dataset we obtain from @oracleselixir_oracles_nodate is accumlated from multiple league of legend esport league like LCS, LEC, LCK, LPL, and the rest of global pro LoL.
+
+
+The dataset utilized in this study was compiled from multiple professional League of Legends (LoL) esports leagues, including the LCS (North America), LEC (Europe), LCK (South Korea), LPL (China), and other global professional leagues. The data aggregation spans from 2023-2024 (23-24 season) and encompasses a wide variety of matches played at different competitive levels. This diversity ensures a comprehensive representation of professional gameplay styles, strategies, and performances across regions.
+
+Each data point corresponds to a single game of one player, identified by a unique gameid, teamid and playerid and includes contextual information such as the league, split (Spring, Summer, or playoffs), split (Winter, Sping, etc), and year. The dataset captures a rich array of in-game metrics and performance indicators for teams and individual players. Team-level data includes variables such as match result (win/loss), game duration (in minutes and seconds), and pivotal game objectives (e.g., First Blood, First Tower, Baron Nashor, and Dragon counts). These metrics are critical for understanding team performance and macro-level strategies.
+
+Player-level statistics include detailed in-game actions such as kills, deaths, assists, gold earned, damage dealt, and wards placed or cleared. These variables allow for a granular examination of individual contributions to a team's success. Additionally, positional data (e.g., top lane, jungle, mid lane, ADC, and support) is included, enabling role-specific analyses. The dataset also tracks champion selections and bans, providing insights into meta trends and drafting strategies over time.
+
+To ensure consistency, all metrics are measured using standardized definitions as provided by the data source, @oracleselixir_oracles_nodate. This source is widely regarded as reliable within the esports analytics community. The dataset is structured to facilitate longitudinal analyses, enabling researchers to explore trends and patterns across regions, seasons, and competitive tiers. Furthermore, derived metrics, such as the champion xp difference at 25 minutes (xpdiffat25), Gold Difference at 25 minutes (golddiffat25), and Damage Per Minute (dpm), are calculated to provide advanced insights into player and team efficiency.
+
+These variables combined allow researchers to reliably analyze and predict the 23-24 season LPL BLG team's player performance.
+
+However there are limitations in these measurements.The dataset combines data from multiple leagues (LCS, LEC, LCK, LPL, and others), each of which has distinct playstyles, metas, and competitive environments. These regional differences might introduce biases, as strategies or performance metrics effective in one league may not translate directly to another. For instance, the LCK may prioritize slower, macro-focused playstyles, whereas the LPL might exhibit faster, skirmish-heavy games. This variation could confound cross-regional comparisons unless properly controlled for [@tan_aggression_2020].
+
+## Raw Data
+
+The raw data from oracleselixir@oracleselixir_oracles_nodate contains 52 columns, all the column headers are displayed below: 
+
+```{r}
+#| echo: false
+#| warning: false
+raw_data <- read_csv(here("data/01-raw_data/2024_lol_esport.csv"), n_max = 10)
+
+
+# Get the column names of your data
+column_names <- colnames(raw_data)
+
+# Reshape the column names into a matrix with, for example, 4 columns
+num_cols <- 3
+column_matrix <- matrix(column_names, ncol = num_cols, byrow = TRUE)
+
+# Convert the matrix to a data frame for kable
+column_df <- as.data.frame(column_matrix)
+
+# Display in multiple columns with kable
+kable(column_df, format = "latex", booktabs = TRUE, col.names = NULL)
+```
+
+These columns can be categorized into three types, elements of response variable, numeric predictors, and categorical predictors.
+
+the elements of response variable are:
+- kills: The number of enemy champions defeated by the player.
+- deaths: The number of times the player was defeated by opponents.
+- assists: The number of assists a player contributes to a teammate's kills.
+
+These three attributes will later be combined to calculate the Kill-Death-Assist ratio (KDA), which serves as the response variable for the model in the cleaned data section @sec-cleaned-data.
+
+
+example of Numeric Predictors are:
+- totalgold: Total gold earned by the player during the game.
+- total.cs: Total number of minions or monsters killed by the player.
+- visionscore: A composite measure of vision provided and vision denied.
+- damagetochampions: Total damage inflicted by the player on opponents.
+- golddiffat25: Gold advantage or deficit compared to the opposing player/team at the 25-minute mark.
+
+example of categorical predictors are:
+- position: The player’s role in the game (e.g., top, jungle, mid, ADC, support).
+- league: The league where the match was played (e.g., LPL, LCK).
+- side: team or the blue side or the red side
+
+## Cleaned Data {#sec-cleaned-data}
+The cleaned dataset used in this study focuses on matches from the League of Legends Pro League (LPL) involving Bilibili Gaming (BLG) during the 2024 season. To ensure the data aligns with the research objectives, the dataset was filtered to include only games played by BLG, with key variables retained for performance analysis. The cleaning process involved removing rows with missing values and selecting relevant columns, including contextual information such as game ID, league, year, split, and side, as well as in-game performance metrics like kills, deaths, assists, total gold, and vision score. A critical addition to the dataset was the calculation of the Kill-Death-Assist ratio (KDA), a widely used indicator of individual performance. The KDA was derived using the formula:
+
+\begin{align}
+KDA = \frac{Kills + Assists}{Max(1, Deaths)}
+\end{align}
+
+ensuring robustness even when deaths were zero.
+
+and we mutate the gamelength unit from second into minute.
+
+The cleaned dataset was saved in Parquet formats to support flexibility in analysis and compatibility with various tools. This focused and structured dataset ensures reliability and completeness, providing a robust foundation for forecasting player performance, analyzing trends, and identifying key contributors to the analysis of BLG's players performance.
+
+The first 6 rows of the dataset are displayed in @tbl-cleaned-data.
+
+```{r}
+#| label: tbl-cleaned-data
+#| tbl-cap: Sample of cleaned league of legend esport data
+#| echo: false
+#| warning: false
+
+cleaned_lol_data |>
+  select(side, position, playername, champion, kills, deaths, assists, visionscore, totalgold, total.cs, damagetochampions, KDA, gamelength, result) |>
+  head(6) |>
+  kable(
+    col.names = c("side", "position", "playername", "champion", "kills", "deaths", "assists", "visionscore", "totalgold", "total.cs", "damagetochampions", "KDA", "gamelength", "result"),
+    booktabs = TRUE
+    ) 
+```
+
+## DATA Exploration
+
+### Champion Pool for players
+
+```{r}
+#| label: tbl-champion-pool
+#| tbl-cap: the table that shows the champion pool for the BLG players
+#| echo: false
+#| warning: false
+
+# Summarize the data to count champion usage and calculate win rate
+top_champions <- cleaned_lol_data |>
+  group_by(playername, champion, position) |>
+  summarise(
+    champion_count = n(),
+    win_rate = mean(result == 1), # Proportion of wins for each champion
+    .groups = "drop"
+  ) |>
+  filter(champion_count > 0) |>
+  group_by(playername) |>
+  slice_max(order_by = champion_count, n = 5) |>
+  arrange(playername, desc(champion_count)) |>  mutate(win_rate = round(win_rate, 2))
+
+# Create a formatted table
+top_champions |>
+  knitr::kable(
+    col.names = c("Player Name", "Champion", "Position", "Count", "Win Rate"),
+    caption = "Top 5 Most Played Champions by Player with Win Rate",
+    booktabs = TRUE,
+    align = "c"
+  )
+```
+
+The table @tbl-champion-pool summarizes the top 5 most played champions for each Bilibili Gaming (BLG) player, including their positions, usage counts, and win rates. It highlights the players' preferences and effectiveness with specific champions, offering insights into individual strengths and team strategies.
+
+- Bin (top lane) favors durable, aggressive champions like Renekton (18 games, 77.8% win rate) and Kennen (12 games, 91.7%). While most of his champions are highly effective, K'Sante has a lower win rate of 54.5%, suggesting Bin may not good at Tank champion. 
+
+- Elk (bot lane) excels on meta ADCs like Kai'Sa, Kalista, and Lucian, all boasting win rates of 80-90%, with consistent performance on utility champions like Senna and Ezreal (77.8%).
+
+- ON (support) shines with engage-heavy champions such as Rell (80%) and Rakan (69.2%), but his Alistar stands out with a perfect 100% win rate, indicating strong synergy in specific scenarios. Wei (substitute jungle) shows exceptional results on niche picks like Maokai, Lillia, and Brand, each with 100% win rates, while his most-played Sejuani achieves 83.3%.
+
+- Xun (main jungle) demonstrates a balanced pool with high win rates on Kindred (83.3%) and Xin Zhao (87.5%), though his performance on Vi (54.5%) is less consistent. Knight (mid lane) showcases versatility, excelling on Corki (92.9%) and Neeko (100%), but his Tristana struggles with a 57.1% win rate.
+
+Wei's (Secondary jungle) limited champion pool suggests fewer games played, with Sejuani (6 games) and Maokai (5 games) leading the count.
+Wei appears to specialize in tanky jungle champions and niche picks like Zyra and Brand. it may shows BLG want wei play tank champion to protect other teammates.
+
+Overall, most players exhibit strong performance with their preferred champions, though some picks, like K'Sante and Vi, show room for improvement. These insights can guide BLG’s drafting strategies and optimize player-champion pairings for better outcomes in competitive play.
+
+### Players VisionScore
+
+```{r}
+#| label: fig-blg-visionscore
+#| fig-cap: BLG players visionscore over game
+#| echo: false
+#| warning: false
+#| fig-width: 15
+#| fig-height: 8
+
+# Grouping data by playername and gameid to calculate vision score per game
+vision_data <- cleaned_lol_data |>
+  group_by(playername, gameid) |>
+  summarise(visionscore = sum(visionscore), .groups = "drop")
+
+# Plotting the vision score for each player across games
+ggplot(vision_data, aes(x = gameid, y = visionscore, color = playername, group = playername)) +
+  geom_line(size = 1) +
+  theme_minimal() +
+  labs(
+    title = "Vision Score by Player Across Games",
+    x = "Game ID",
+    y = "Vision Score",
+    color = "Player Name"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+```
+
+
+The line chart @fig-blg-visionscore visualizes the vision scores of individual players on the Bilibili Gaming (BLG) team across multiple games, offering insights into their vision control performance and consistency. Each line represents a player's cumulative vision score over the course of several matches, helping to compare and analyze their contributions to map awareness and team strategy.
+
+Key observations highlight that ON, the team's support player, consistently records the highest vision scores across games. This is expected, as supports typically focus on warding and vision control, critical for map dominance. ELK, the ADC, also shows considerable vision score variability. Other roles, such as Bin (top lane), and Knight (mid lane), have lower and steadier vision scores, aligning with their roles' primary focus on laning and damage output rather than vision control.
+
+### Game duration 
+```{r}
+# Plotting a histogram for game duration in minutes
+ggplot(cleaned_lol_data, aes(x = gamelength)) +
+  geom_histogram(binwidth = 2, fill = "steelblue", color = "black", alpha = 0.7) +
+  theme_minimal() +
+  labs(
+    title = "Distribution of Game Duration",
+    x = "Game Duration (minutes)",
+    y = "Frequency"
+  )
+```
+
+### players gold earned
+
+```{r}
+# Reshape the data for comparison
+gold_damage_data <- cleaned_lol_data |>
+  select(playername, totalgold, damagetochampions) |>
+  pivot_longer(
+    cols = c(totalgold, damagetochampions),
+    names_to = "metric",
+    values_to = "value"
+  )
+
+# Plot the boxplots for total gold and damage to champions
+ggplot(gold_damage_data, aes(x = playername, y = value, fill = metric)) +
+  geom_boxplot(outlier.color = "red", outlier.shape = 16, alpha = 0.7) +
+  facet_wrap(~ metric, scales = "free_y", labeller = as_labeller(c(
+    "totalgold" = "Total Gold Earned",
+    "damagetochampions" = "Damage to Champions"
+  ))) +
+  theme_minimal() +
+  labs(
+    title = "Comparison of Total Gold Earned and Damage to Champions by Player",
+    x = "Player Name",
+    y = "Value"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+```
 
 ## Outcome variables
 
@@ -60,40 +286,12 @@ Add graphs, tables and text. Use sub-sub-headings for each outcome variable or u
 
 Some of our data is of penguins (@fig-bills), from @palmerpenguins.
 
-```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
 
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
 
 Talk more about it.
 
 And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
 
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
-#| echo: false
-#| warning: false
-#| message: false
-
-analysis_data <- read_csv(here::here("data/02-analysis_data/analysis_data.csv"))
-
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
-```
 
 Talk way more about it. 
 
@@ -143,33 +341,8 @@ We can use maths by including latex between dollar signs, for instance $\theta$.
 
 Our results are summarized in @tbl-modelresults.
 
-```{r}
-#| echo: false
-#| eval: true
-#| warning: false
-#| message: false
 
-library(rstanarm)
 
-first_model <-
-  readRDS(file = here::here("models/first_model.rds"))
-```
-
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
-#| warning: false
-
-modelsummary::modelsummary(
-  list(
-    "First model" = first_model
-  ),
-  statistic = "mad",
-  fmt = 2
-)
-```
 
 
 
@@ -207,26 +380,7 @@ In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. 
 
 In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
 
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
-#| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
 
-pp_check(first_model) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
-```
 
 ## Diagnostics
 
@@ -234,20 +388,7 @@ posterior_vs_prior(first_model) +
 
 @fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
 
-```{r}
-#| echo: false
-#| eval: true
-#| message: false
-#| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
 
-plot(first_model, "trace")
-
-plot(first_model, "rhat")
-```
 
 
 
