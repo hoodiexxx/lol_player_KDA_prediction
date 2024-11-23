@@ -26,6 +26,8 @@ library(arrow)
 ```
 
 ```{r}
+#| echo: false
+#| warning: false
 cleaned_lol_data = read_parquet(here("data/02-analysis_data/cleaned_lol_data.parquet"))
 ```
 
@@ -139,6 +141,8 @@ The first 6 rows of the dataset are displayed in @tbl-cleaned-data.
 #| tbl-cap: Sample of cleaned league of legend esport data
 #| echo: false
 #| warning: false
+#| tbl-width: 15
+#| tblg-height: 8
 
 cleaned_lol_data |>
   select(side, position, playername, champion, kills, deaths, assists, visionscore, totalgold, total.cs, damagetochampions, KDA, gamelength, result) |>
@@ -233,8 +237,15 @@ The line chart @fig-blg-visionscore visualizes the vision scores of individual p
 
 Key observations highlight that ON, the team's support player, consistently records the highest vision scores across games. This is expected, as supports typically focus on warding and vision control, critical for map dominance. ELK, the ADC, also shows considerable vision score variability. Other roles, such as Bin (top lane), and Knight (mid lane), have lower and steadier vision scores, aligning with their roles' primary focus on laning and damage output rather than vision control.
 
+\newpage
+
 ### Game duration 
 ```{r}
+#| label: fig-blg-game-duration
+#| fig-cap: BLG team generally end the game around 30 minutes
+#| echo: false
+#| warning: false
+
 # Plotting a histogram for game duration in minutes
 ggplot(cleaned_lol_data, aes(x = gamelength)) +
   geom_histogram(binwidth = 2, fill = "steelblue", color = "black", alpha = 0.7) +
@@ -246,9 +257,17 @@ ggplot(cleaned_lol_data, aes(x = gamelength)) +
   )
 ```
 
-### players gold earned
+The histogram @fig-blg-game-duration depicts the distribution of game durations for the Bilibili Gaming (BLG) team, measured in minutes. The graph reveals that most games tend to last between 28 to 36 minutes, with a peak frequency around the 30-minute mark. This suggests that BLG typically ends their games within the expected duration for competitive matches.
+
+\newpage
+
+### players gold earned and players damage
 
 ```{r}
+#| label: fig-blg-gold-damage
+#| fig-cap: In BLG team, ELK is the highest damage and gold earned player.
+#| echo: false
+#| warning: false
 # Reshape the data for comparison
 gold_damage_data <- cleaned_lol_data |>
   select(playername, totalgold, damagetochampions) |>
@@ -278,41 +297,195 @@ ggplot(gold_damage_data, aes(x = playername, y = value, fill = metric)) +
 
 ```
 
-## Outcome variables
+The boxplots @fig-blg-gold-damage compare the total gold earned and damage to champions by each player on the Bilibili Gaming (BLG) team, offering insights into their in-game contributions and roles.
 
-Add graphs, tables and text. Use sub-sub-headings for each outcome variable or update the subheading to be singular.
-
-
-
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
+Key observations highlight that Elk, the ADC, consistently earns the most gold and deals the highest damage to champions. This reflects the ADC role's reliance on gold to build damage-focused items and their critical role in team fights. However, Wei stands out by earning a comparatively high amount of gold while contributing less damage, suggesting a potential mismatch between resource allocation and damage output. This could indicate a focus on tank or utility-oriented champions or inefficiency in converting gold into impactful performance.
 
 
-
-Talk more about it.
-
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
+\newpage
 
 
-Talk way more about it. 
+# Model {#sec-model}
 
-## Predictor variables
-
-Add graphs, tables and text.
-
-Use sub-sub-headings for each outcome variable and feel free to combine a few into one if they go together naturally.
-
-
-
-
-
-
-
-
-# Model
-
-The goal of our modelling strategy is twofold. Firstly,...
+The goal of our modelling strategy is twofold. Firstly, we aim to accurately predict the player KDA performance based on relevant game data and key influencing factors. Secondly, we seek to evaluate the efficacy of different modeling approaches—from simple linear regression (SLR) to multiple linear regression (MLR) and Bayesian hierarchical models—to understand their predictive capabilities and assess the underlying relationships between variables. By comparing these models, we can determine which approach provides the most robust and reliable predictions, while considering the variability and potential uncertainty in the data.
 
 Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
+
+## Precaution for Building Model
+
+According to the KDA formula in cleaned data section @sec-cleaned-data, the response variable KDA is directly depend on three attributes, kills, deaths and assists, so we cannot use kills, deaths and assists as predictors in our model formula Since the response variable is mathematically derived from these three attributes, including kills, deaths, and assists as predictors in the model would create perfect multicollinearity. This means the predictors would have a deterministic relationship with the response variable, violating the assumption of independence between the predictors and the response variable in regression models. For a Bayesian model, this also violates the assumption that the prior information (or likelihood) is not over-specified. In Bayesian inference, incorporating variables that deterministically define the response variable introduces redundancy and inflates the certainty of the posterior distribution, making the model overly confident and prone to poor generalization.
+
+
+## Basic Simple Linear Regresion Model
+
+### Basic Simple Linear Regression Model Set-Up
+\begin{align*}
+Y = \beta_0 + \beta_1 \cdot X + \epsilon
+\end{align*}
+
+Where:\
+\begin{itemize}
+\item \( Y \): The dependent variable (response variable) you are trying to predict.
+\item \( X \): The independent variable (predictor variable) used to predict \( Y \), in this case, X represent the predictor variable - total CS.
+\item \( \beta_0 \): The intercept of the regression line, representing the value of \( Y \) when \( X = 0 \).
+\item \( \beta_1 \): The slope of the regression line, representing the change in \( Y \) for a one-unit increase in \( X \).
+\item \( \epsilon \): The error term, accounting for the variability in \( Y \) that \( X \) does not explain.
+\end{itemize}
+
+
+### SLR Model
+```{r}
+#| label: fig-model-SLR
+#| fig-cap: "total cs has limited predictive accuracy for league of legend esport players KDA performance."
+#| fig-subcap: ["Actual KDA vs Predicted KDA", "predictor total CS vs Actual KDA with linear regression line"]
+#| echo: false
+#| warning: false
+#| layout-nrow: 2
+
+lm_model1 = lm(KDA ~ total.cs, data = cleaned_lol_data)
+# summary(lm_model1)
+lm1_KDA_predictions = predict(lm_model1, cleaned_lol_data)
+
+# Add predictions and include player information
+lm1_data <- cleaned_lol_data |>
+  mutate(KDA_predictions = predict(lm_model1),
+         playername = as.factor(playername)) # Ensure player names are treated as factors
+
+# Plot predictions vs actual values with player-wise coloring
+ggplot(lm1_data, aes(x = KDA, y = KDA_predictions, color = playername)) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(
+    title = "Single Linear Model (Total CS Predictor) for BLG Players",
+    x = "Actual KDA",
+    y = "Predicted KDA",
+    color = "Player Name"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+  # Plot actual KDA vs total CS with regression lines for each player
+ggplot(cleaned_lol_data, aes(x = total.cs, y = KDA, color = playername)) +
+  geom_point(size = 2, alpha = 0.7) + # Points for actual values
+  geom_smooth(method = "lm", se = FALSE, aes(group = playername), size = 1) + # SLR lines per player
+  labs(
+    title = "Total CS vs. Actual KDA with Regression Lines by Player",
+    x = "Total CS",
+    y = "KDA",
+    color = "Player Name"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+
+In this SLR model, the response variable is KDA and the only one predictor is the total CS. @fig-model-SLR-1 visualizes the relationship between the actual and predicted values of KDA for BLG players, based on a simple linear regression model with total cs as the sole predictor. eaach points represent individual comparisons between actual and predicted values, with the color of the dots representing different players. The red dashed line represents the line of perfect prediction, where actual values would equal predicted values.
+
+@fig-model-SLR-2 examines the relationship between total CS and KDA for BLG players, with each point representing a game and each player distinguished by color. Separate regression lines for each player highlight role-specific trends. 
+
+The primary concern lies in the evident dispersion of data points, which are widely spread and do not cluster closely around the line of perfect prediction (the dashed red line). This suggestslimited dependence of KDA on total CS, total CS does not adequately explain the variability in KDA. The observed inconsistencies between actual and predicted values indicate that the relationship between KDA and total CS is not sufficiently captured by a linear model with just one predictor.
+
+### Compute R Squared for SLR Model
+
+\begin{align*}
+SS_{\text{total}} = \sum_{i=1}^{n} \left( y_i - \bar{y} \right)^2\\
+SS_{\text{residual}} = \sum_{i=1}^{n} \left( y_i - \hat{y}_i \right)^2\\
+R^2 = 1 - \frac{SS_{\text{residual}}}{SS_{\text{total}}}\\
+\text{R-squared} = 0.0008659
+\end{align*}
+
+
+
+\newpage
+
+## Multiple Linear Regression Model
+
+### Multiple Linear Regression Model Set-up
+
+The formula is:
+
+$$
+Y = \beta_0 + \beta_1 \cdot X_1 + \beta_2 \cdot X_2 + \beta_3 \cdot X_3 + \beta_4 \cdot X_4 + \beta_5 \cdot X_5 + \beta_6 \cdot X_6 + \epsilon
+$$
+
+Where:
+
+\begin{itemize}
+\item \( Y \): The dependent variable (response variable), representing the KDA.
+\item \( X_1 \): Side (categorical variable: Blue or Red), representing the team side during the game.
+\item \( X_2 \): Vision Score, measuring the player's vision contribution during the game.
+\item \( X_3 \): Total Gold, representing the total gold earned by the player.
+\item \( X_4 \): Total CS, representing the total creep score of the player.
+\item \( X_5 \): Damage to Champions, indicating the total damage dealt to enemy champions.
+\item \( X_6 \): Game Duration, representing the length of the game in seconds.
+\item \( \beta_0 \): The intercept, representing the expected value of \( Y \) when all predictors are 0.
+\item \( \beta_1, \beta_2, \beta_3, \beta_4, \beta_5, \beta_6 \): The coefficients, representing the change in \( Y \) for a one-unit increase in the corresponding predictor while holding other predictors constant.
+\item \( \epsilon \): The error term, accounting for the variability in \( Y \) not explained by the predictors.
+\end{itemize}
+
+This multiple linear regression model accounts for both categorical and continuous variables to predict the player's **KDA**, capturing the combined influence of gameplay factors such as team side, vision control, resource management, damage output, and game duration.
+
+
+### MLR
+
+```{r}
+
+model_MLR = lm(KDA ~ side + visionscore + totalgold + total.cs + damagetochampions + gamelength, data = cleaned_lol_data)
+
+
+summary(model_MLR)
+
+model_MLR_KDA_predictions = predict(model_MLR, cleaned_lol_data)
+
+model_MLR_visulization_data <- cleaned_lol_data |>
+  mutate(KDA_predictions = predict(lm_model1),
+         playername = as.factor(playername)) # Ensure player names are treated as factors
+
+ggplot(model_MLR_visulization_data, aes(x = KDA, y = model_MLR_KDA_predictions, color = playername)) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(
+    title = "Single Linear Model (Total CS Predictor) for BLG Players",
+    x = "Actual KDA",
+    y = "Predicted KDA",
+    color = "Player Name"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+```{r}
+# Multiple R-squared:  0.337
+```
+
+
+
+
+
+
+
+## Bayesian Model set-up {#sec-modelsetup}
+
+The Bayesian model is implemented in R [@citeR] using the rstanarm package as described by @rstanarm. We run the model with the following specifications:
+
+- Formula: $\text{pct} \sim \text{pollscore} + \text{days taken from election} + \text{sample size} + (1 | \text{methodology}) + (1 | \text{state})$
+
+- Priors: Normal(0, 2.5) for all coefficients and intercept, Exponential(1) for $\sigma$
+
+- Settings: Seed = 123, Cores = 4, Adapt delta = 0.95
+
+We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+
+
 
 ## Model set-up
 
