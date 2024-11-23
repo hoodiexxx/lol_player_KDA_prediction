@@ -451,7 +451,7 @@ ggplot(model_MLR_visulization_data, aes(x = KDA, y = model_MLR_KDA_predictions, 
   geom_point(size = 2, alpha = 0.7) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
   labs(
-    title = "Single Linear Model (Total CS Predictor) for BLG Players",
+    title = "Multiple Linear Model (Total CS Predictor) for BLG Players",
     x = "Actual KDA",
     y = "Predicted KDA",
     color = "Player Name"
