@@ -23,6 +23,8 @@ library(here)
 library(tibble)
 library(knitr)
 library(arrow)
+library(rstanarm)
+library(ggplot2)
 ```
 
 ```{r}
@@ -43,6 +45,8 @@ Bilibili Gaming (BLG), a prominent team in the LPL, faces the challenge of maint
 This paper developing a hybrid model that leverages both traditional in-game metrics and advanced variables, such as total creep score (CS), to forecast player performance for BLG in the 2024 season. The model specifically focuses on predicting the Kill-Death-Assist ratio (KDA), a widely accepted indicator of individual performance, across various matches. Finally offers actionable insights into player roles and impacts, highlighting those who can consistently carry games and identifying players whose performance may not justify their perceived value.
 
 The remainder of this paper is structured as follows: @sec-data provides an overview of the data.
+
+The data simulation is done in python 3.9[@citePython] with the following packages: Numpy [@citeNumPy] and pandas[@citepandas].
 
 the data gathering and analysis is done in R [@citeR] with the following packages: knitr [@knitr], tidyverse [@tidyverse], ggplot2 [@ggplot2], dplyr [@dplyr], arrow [@arrow], here [@here], and Rstan [@Rstan]
 
@@ -142,7 +146,7 @@ The first 6 rows of the dataset are displayed in @tbl-cleaned-data.
 #| echo: false
 #| warning: false
 #| tbl-width: 15
-#| tblg-height: 8
+#| tbl-height: 8
 
 cleaned_lol_data |>
   select(side, position, playername, champion, kills, deaths, assists, visionscore, totalgold, total.cs, damagetochampions, KDA, gamelength, result) |>
@@ -435,11 +439,15 @@ This multiple linear regression model accounts for both categorical and continuo
 ### MLR
 
 ```{r}
+#| label: fig-model-MLR
+#| fig-cap: "The MLR shows better performance on captured significant variance in players KDA performance."
+#| echo: false
+#| warning: false
 
 model_MLR = lm(KDA ~ side + visionscore + totalgold + total.cs + damagetochampions + gamelength, data = cleaned_lol_data)
 
 
-summary(model_MLR)
+# summary(model_MLR)
 
 model_MLR_KDA_predictions = predict(model_MLR, cleaned_lol_data)
 
@@ -463,44 +471,156 @@ ggplot(model_MLR_visulization_data, aes(x = KDA, y = model_MLR_KDA_predictions, 
   )
 ```
 
+
+The plot @fig-model-MLR visualizes the results of a Multiple Linear Regression (MLR) model predicting KDA using predictors such as side, vision score, total gold, total CS, damage to champions, and game duration. The x-axis represents the actual KDA values, while the y-axis represents the predicted KDA values. Each dot corresponds to an individual game, with colors indicating different players. The red dashed line represents the perfect prediction line (y=x), where predicted values would perfectly match the actual values.
+
+The model demonstrates an improved ability to capture variance in KDA compared to a simple linear regression model, as evidenced by many points clustering closer to the red dashed line.
+
+### Compute R Squared for SLR Model
+\begin{align*}
+SS_{\text{total}} = \sum_{i=1}^{n} \left( y_i - \bar{y} \right)^2\\
+SS_{\text{residual}} = \sum_{i=1}^{n} \left( y_i - \hat{y}_i \right)^2\\
+R^2 = 1 - \frac{SS_{\text{residual}}}{SS_{\text{total}}}\\
+\text{R-squared} = 0.337
+\end{align*}
+
+We could see that there is a strong improvement on the R-squared values, which mean the MLR model have better performance on illustration for the response variable but still reflects limited predictive accuracy, as only 33.7% of the variance in the KDA is explained by the MLR model.
+
+
+## Bayesian Model
+
+### Bayesian Model Set-UP
+\begin{align*}
+\text{KDA}_i &\sim \mathcal{N}(\mu_i, \sigma) \\
+\mu_i &= \alpha + \beta_1 \cdot \text{visionscore}_i + \beta_2 \cdot \text{totalgold}_i + \beta_3 \cdot \text{totalcs}_i \\
+&+ \beta_4 \cdot \text{damagetochampions}_i\\
+&+ u_{\text{side}[i]} + u_{\text{gamelength}[i]} + u_{\text{position}[i]} \\
+\alpha &\sim \text{Normal}(0, 2.5) \\
+\beta_j &\sim \text{Normal}(0, 2.5), \quad j = 1, 2, 3, 4 \\
+u_{\text{side}} &\sim \text{Normal}(0, \sigma_{\text{side}}) \\
+u_{\text{gamelength}} &\sim \text{Normal}(0, \sigma_{\text{gamelength}}) \\
+u_{\text{position}} &\sim \text{Normal}(0, \sigma_{\text{position}})
+\end{align*}
+
+This hierarchical Bayesian model is designed to capture both the fixed effects of predictors and the random effects of grouping factors. The response variable is KDA, predictors are visionscore, totalgold, total.cs, damagetochampions, side,gamelength and position. A normal prior with mean 0 and standard deviation 2.5 is set for all coefficients and the intercept, scaled automatically.
+
+### Posterior Predictive Checks 
+
 ```{r}
-# Multiple R-squared:  0.337
+#| echo: false
+#| warning: false
+# formula = KDA ~ visionscore + totalgold + total.cs + damagetochampions + gamelength + (1 | side)
+set.seed(123)
+
+bayesian_model_1 <- readRDS(here("models/bayesian_model_1.rds"))
+
+# pp_check(bayesian_model_1)
+# bayesian_model_predictions = posterior_predict(bayesian_model_1, newdata = cleaned_lol_data)
+# ss_total <- sum((cleaned_lol_data$KDA - mean(cleaned_lol_data$KDA))^2)
+# ss_residual <- sum((cleaned_lol_data$KDA - colMeans(bayesian_model_predictions))^2)
+# r_squared <- 1 - (ss_residual / ss_total)
+# print(r_squared)
 ```
 
 
+```{r}
+#| echo: false
+#| warning: false
+
+# # Add predictions to the data
+# cleaned_lol_data$predicted_KDA <- apply(bayesian_model_predictions, 2, mean) # Take the mean of posterior predictions
+
+# # Create a visualization with actual vs. predicted values
+# ggplot(cleaned_lol_data, aes(x = damagetochampions)) +
+#   geom_line(aes(y = KDA, color = "Actual"), size = 1) + # Line for actual values
+#   geom_line(aes(y = predicted_KDA, color = "Predicted"), size = 1, linetype = "dashed") + # Line for predicted values
+#   labs(
+#     title = "Actual vs Predicted KDA",
+#     x = "Game Index",
+#     y = "KDA",
+#     color = "Legend"
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     legend.position = "bottom"
+#   )
+
+```
+
+
+```{r}
+#| label: fig-bayesian-model
+#| fig-cap: "Posterior Predictive Check for the Bayesian Model Predicting pct"
+#| echo: false
+#| warning: false
+pp_check(bayesian_model_1)
+```
+
+@fig-bayesian-model The posterior predictive check (PPC) plot compares the observed KDA distribution $y$(dark blue line) with the posterior predictive distributions $y_{rep}$(lighter blue lines) generated by the Bayesian model. The alignment between the observed and predictive distributions suggests that the model captures the central tendencies and overall variability of KDA effectively. The peak and general shape of the observed distribution are closely mirrored by the simulated predictions, indicating that the included predictors—vision score, total gold, total CS, damage to champions, position and game length are relevant in explaining the main patterns in KDA.
+
+However, the model shows slight underperformance in capturing extreme values, as evidenced by discrepancies in the tails of the distributions.
+
+In conclusion, the Bayesian model performs well in approximating the central tendencies and variance of KDA, as demonstrated by the close alignment between observed and predictive distributions. However, some refinements may be necessary to improve the model's ability to capture extreme values and better represent the full range of variability in the data.
 
 
 
+```{r}
+#| echo: false
+#| warning: false
+# pp_check(bayesian_model_1)
+
+# summary(bayesian_model_1)
+# bayesian_model_predictions = posterior_predict(bayesian_model_1, newdata = cleaned_lol_data)
+```
 
 
-## Bayesian Model set-up {#sec-modelsetup}
+```{r}
+#| warning: false
+#| echo: false
+# ss_total <- sum((cleaned_lol_data$KDA - mean(cleaned_lol_data$KDA))^2)
+# ss_residual <- sum((cleaned_lol_data$KDA - colMeans(bayesian_model_predictions))^2)
+# r_squared <- 1 - (ss_residual / ss_total)
+```
 
-The Bayesian model is implemented in R [@citeR] using the rstanarm package as described by @rstanarm. We run the model with the following specifications:
+### Train Test Validation
+we implemented a train-test split validation approach to evaluate the performance of a Bayesian hierarchical model predicting KDA for BLG players. The dataset was divided into training (70%) and test (30%) sets to fit and validate the model, respectively. We used the stan_glmer function to fit the model on the training data, with predictors includingvision score, total gold, total CS, damage to champions, position and game length. After training, we test the model by generated predictions on the test set and calculated an R squared value to quantify the model's predictive accuracy. 
 
-- Formula: $\text{pct} \sim \text{pollscore} + \text{days taken from election} + \text{sample size} + (1 | \text{methodology}) + (1 | \text{state})$
+```{r}
+#| echo: false
+#| warning: false
+train_data = read_parquet(here("data/02-analysis_data/train_data.parquet"))
+test_data = read_parquet(here("data/02-analysis_data/test_data.parquet"))
 
-- Priors: Normal(0, 2.5) for all coefficients and intercept, Exponential(1) for $\sigma$
+bayesian_model_train = readRDS(here("models/bayesian_model_train.rds"))
 
-- Settings: Seed = 123, Cores = 4, Adapt delta = 0.95
+predictions <- posterior_predict(bayesian_model_train, newdata = test_data)
 
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+ss_total <- sum((test_data$KDA - mean(test_data$KDA))^2)
+ss_residual <- sum((test_data$KDA - colMeans(predictions))^2)
+r_squared <- 1 - (ss_residual / ss_total)
 
+# R-Squared: 0.6281344
+```
 
+```{r}
+print(r_squared)
+```
 
-## Model set-up
-
-Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
-
-\begin{align} 
-y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
-\mu_i &= \alpha + \beta_i + \gamma_i\\
-\alpha &\sim \mbox{Normal}(0, 2.5) \\
-\beta &\sim \mbox{Normal}(0, 2.5) \\
-\gamma &\sim \mbox{Normal}(0, 2.5) \\
-\sigma &\sim \mbox{Exponential}(1)
+\begin{align}
+SS_{\text{total}} = \sum_{i=1}^{n} \left( y_i - \bar{y} \right)^2\\
+SS_{\text{residual}} = \sum_{i=1}^{n} \left( y_i - \hat{y}_i \right)^2\\
+R^2 = 1 - \frac{SS_{\text{residual}}}{SS_{\text{total}}}\\
+\text{R-squared} = 0.700563202695799
 \end{align}
 
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+Where:\
+\begin{itemize}
+    \item \( y_i \) represents the actual values,
+    \item \( \bar{y} \) is the mean of the actual values,
+    \item \( \hat{y}_i \) are the predicted values,
+    \item \( SS_{\text{total}} \) is the total sum of squares,
+    \item \( SS_{\text{residual}} \) is the sum of squared residuals.
+\end{itemize}
 
 
 ### Model justification
