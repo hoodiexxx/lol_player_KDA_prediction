@@ -99,10 +99,10 @@ ggplot(model_data, aes(x = total.cs, y = kills, color = combined_label)) +
 
 
 
-#### Save model ####
-# saveRDS(
-#   lm_model1,
-#   file = "models/lm_model1.rds"
-# )
+### Save model ####
+saveRDS(
+  bayesian_model,
+  file = "models/first_win_rate_prediction_model.rds"
+)
 
 
