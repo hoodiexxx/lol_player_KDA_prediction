@@ -1,10 +1,9 @@
 ---
-title: "Datasheet for 'A dataset'"
+title: "Datasheet for League of Legend Player Performance KDA analysis Dataset"
 author: 
   - Colin Sihan Yang
 thanks: "Code and data are available at: [https://github.com/hoodiexxx/lol_win_rate_prediction](https://github.com/hoodiexxx/lol_win_rate_prediction)."
-date: "`r Sys.time()`"
-date-format: "D MMMM YYYY"
+date: today
 format: pdf
 number-sections: true
 bibliography: ../../paper/references.bib
