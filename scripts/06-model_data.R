@@ -19,6 +19,7 @@ set.seed(123)
 cleaned_lol_data <- read_parquet(here("data/02-analysis_data/cleaned_lol_data.parquet"))
 
 ### Model data ####
+# Main effect, random effect
 set.seed(123)
 formula = KDA ~ visionscore + totalgold + total.cs + damagetochampions + (1 | side) + + (1 | gamelength) + (1 | position)
 priors = normal(0, 2.5, autoscale = TRUE)

@@ -6,7 +6,7 @@ author:
 thanks: "Code and data are available at: [https://github.com/hoodiexxx/lol_win_rate_prediction](https://github.com/hoodiexxx/lol_win_rate_prediction)."
 date: today
 date-format: long
-abstract: "This paper develops a hybrid model to forecast the 2024 performance of Bilibili Gaming (BLG) team players by analyzing team statistics from the League of Legends Pro League (LPL). The model focuses on predicting the Kill-Death-Assist ratio (KDA) for individual players across different games, leveraging both traditional in-game metrics such as gold difference, kills, assists, and vision score, and advanced variables like total creep score (total CS) to provide a comprehensive view of player performance. By integrating machine learning techniques with esports-specific insights, this model forecasting player KDAs, identifying performance trends, but also offers a clear assessment of individual contributions to the team. It highlights top-performing players while identifying those whose performance may negatively impact the team's success. The findings offer actionable insights, enabling the BLG organization to make informed decisions on player contracts."
+abstract: "This paper develops a hybrid model to forecast the 2024 performance of Bilibili Gaming (BLG) team players by analyzing team statistics from the League of Legends Pro League (LPL). The model focuses on predicting the Kill-Death-Assist ratio (KDA) for individual players across different games, leveraging both traditional in-game metrics such as gold difference, kills, assists, and vision score, and advanced variables like total creep score (total CS) to provide a comprehensive view of player performance. By integrating machine learning techniques with esports-specific insights, this model forecasting player KDAs, identifying performance trends, but also offers a clear assessment of individual contributions to the team. The result shows that opinions formed in online discussion or media companies may not reflect the real performace of the players in our model prediction. For instance, our analysis indicates the overhyped performance of Bin in online discussion. It highlights top-performing players while identifying those whose performance may negatively impact the team's success. The findings offer actionable insights, enabling the BLG organization to make informed decisions on player contracts. "
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -47,13 +47,13 @@ This paper developing a hybrid model that leverages both traditional in-game met
 
 The remainder of this paper is structured as follows: @sec-data provides an overview of the data. @sec-model provides the modeling approach, including simple and multiple linear regression models and a Bayesian hierarchical model. We then present our results in @sec-result and discuss the implications and limitation, future research directions in @sec-discussion.
 
-The data simulation is done in python 3.9[@citePython] with the following packages: Numpy [@citeNumPy] and pandas[@citepandas].
+The data simulation is done in python 3.9 [@citePython] with the following packages: Numpy [@citeNumPy] and pandas [@citepandas].
 
-the data gathering and analysis is done in R [@citeR] with the following packages: knitr [@knitr], tidyverse [@tidyverse], ggplot2 [@ggplot2], dplyr [@dplyr], arrow [@arrow], here [@here], kableExtra[@citekableextra], and Rstan [@Rstan]
+The data gathering and analysis is done in R [@citeR] with the following packages: knitr [@knitr], tidyverse [@tidyverse], ggplot2 [@ggplot2], dplyr [@dplyr], arrow [@arrow], here [@here], kableExtra[@citekableextra], and Rstan [@Rstan]
 
 ## Estimand
 
-the estimand for this research paper is the predicted Kill-Death-Assist ratio (KDA) for the BLG team players. The prediction is based on quantifying various in-game factors, including total cs, gold earned, vision score, damage to champion, which are used as predictors.
+The estimand for this research paper is the predicted Kill-Death-Assist ratio (KDA) for the BLG team players. The prediction is based on quantifying various in-game factors, including total cs, gold earned, vision score, damage to champion, which are used as predictors.
 
 
 
@@ -72,7 +72,7 @@ The dataset utilized in this study was compiled from multiple professional Leagu
 
 Each data point corresponds to a single game of one player, identified by a unique gameid, teamid and playerid and includes contextual information such as the league, split (Spring, Summer, or playoffs), split (Winter, Sping, etc), and year. The dataset captures a rich array of in-game metrics and performance indicators for teams and individual players. Team-level data includes variables such as match result (win/loss), game duration (in minutes and seconds), and pivotal game objectives (e.g., First Blood, First Tower, Baron Nashor, and Dragon counts). These metrics are critical for understanding team performance and macro-level strategies.
 
-Player-level statistics include detailed in-game actions such as kills, deaths, assists, gold earned, damage dealt, and wards placed or cleared. These variables allow for a granular examination of individual contributions to a team's success. Additionally, positional data (e.g., top lane, jungle, mid lane, ADC, and support) is included, enabling role-specific analyses. The dataset also tracks champion selections and bans, providing insights into meta trends and drafting strategies over time.
+Player-level statistics include detailed in-game actions such as kills, deaths, assists, gold earned, damage dealt, and wards placed or cleared. These variables allow for a granular examination of individual contributions to a team's success. Additionally, positional data (e.g., top lane, jungle, mid lane, ADC-bot lane, and support) is included, enabling role-specific analyses. The dataset also tracks champion selections and bans, providing insights into meta trends and drafting strategies over time.
 
 To ensure consistency, all metrics are measured using standardized definitions as provided by the data source, @oracleselixir_oracles_nodate. This source is widely regarded as reliable within the esports analytics community. The dataset is structured to facilitate longitudinal analyses, enabling researchers to inspect trends and patterns across regions, seasons, and competitive tiers. Furthermore, derived metrics, such as the champion xp difference at 25 minutes (xpdiffat25), Gold Difference at 25 minutes (golddiffat25), and Damage Per Minute (dpm), are calculated to provide advanced insights into player and team efficiency.
 
@@ -82,7 +82,7 @@ However there are limitations in these measurements.The dataset combines data fr
 
 ## Raw Data
 
-The raw data from oracleselixir@oracleselixir_oracles_nodate contains 52 columns, all the column headers are displayed below: 
+The raw data from oracleselixir @oracleselixir_oracles_nodate contains 52 columns, all the column headers are displayed below: 
 
 ```{r}
 #| echo: false
@@ -109,7 +109,8 @@ kable(column_df, format = "latex", booktabs = TRUE, longtable = TRUE) %>%
 
 These columns can be categorized into three types, elements of response variable, numeric predictors, and categorical predictors.
 
-the elements of response variable are:
+The elements of response variable are: 
+
 - kills: The number of enemy champions defeated by the player.
 - deaths: The number of times the player was defeated by opponents.
 - assists: The number of assists a player contributes to a teammate's kills.
@@ -117,14 +118,16 @@ the elements of response variable are:
 These three attributes will later be combined to calculate the Kill-Death-Assist ratio (KDA), which serves as the response variable for the model in the cleaned data section @sec-cleaned-data.
 
 
-example of Numeric Predictors are:
+Example of Numeric Predictors are:
+
 - totalgold: Total gold earned by the player during the game.
 - total.cs: Total number of minions or monsters killed by the player.
 - visionscore: A composite measure of vision provided and vision denied.
 - damagetochampions: Total damage inflicted by the player on opponents.
 - golddiffat25: Gold advantage or deficit compared to the opposing player/team at the 25-minute mark.
 
-example of categorical predictors are:
+Example of categorical predictors are:
+
 - position: The player’s role in the game (e.g., top, jungle, mid, ADC, support).
 - league: The league where the match was played (e.g., LPL, LCK).
 - side: team or the blue side or the red side
@@ -188,13 +191,12 @@ top_champions <- cleaned_lol_data |>
 top_champions |>
   knitr::kable(
     col.names = c("Player Name", "Champion", "Position", "Count", "Win Rate"),
-    caption = "Top 5 Most Played Champions by Player with Win Rate",
     booktabs = TRUE,
     align = "c"
   )
 ```
 
-The table @tbl-champion-pool summarizes the top 5 most played champions for each Bilibili Gaming (BLG) player, including their positions, usage counts, and win rates. It highlights the players' preferences and effectiveness with specific champions, offering insights into individual strengths and team strategies.
+@tbl-champion-pool summarizes the top 5 most played champions for each Bilibili Gaming (BLG) player, including their positions, usage counts, and win rates. It highlights the players' preferences and effectiveness with specific champions, offering insights into individual strengths and team strategies.
 
 - Bin (top lane) favors durable, aggressive champions like Renekton (18 games, 77.8% win rate) and Kennen (12 games, 91.7%). While most of his champions are highly effective, K'Sante has a lower win rate of 54.5%, suggesting Bin may not good at Tank champion. 
 
@@ -241,7 +243,7 @@ ggplot(vision_data, aes(x = gameid, y = visionscore, color = playername, group =
 ```
 
 
-The line chart @fig-blg-visionscore visualizes the vision scores of individual players on the Bilibili Gaming (BLG) team across multiple games, offering insights into their vision control performance and consistency. Each line represents a player's cumulative vision score over the course of several matches, helping to compare and analyze their contributions to map awareness and team strategy.
+@fig-blg-visionscore visualizes the vision scores of individual players on the Bilibili Gaming (BLG) team across multiple games, offering insights into their vision control performance and consistency. Each line represents a player's cumulative vision score over the course of several matches, helping to compare and analyze their contributions to map awareness and team strategy.
 
 Key observations highlight that ON, the team's support player, consistently records the highest vision scores across games. This is expected, as supports typically focus on warding and vision control, critical for map dominance. ELK, the ADC, also shows considerable vision score variability. Other roles, such as Bin (top lane), and Knight (mid lane), have lower and steadier vision scores, aligning with their roles' primary focus on laning and damage output rather than vision control.
 
@@ -265,7 +267,7 @@ ggplot(cleaned_lol_data, aes(x = gamelength)) +
   )
 ```
 
-The histogram @fig-blg-game-duration depicts the distribution of game durations for the Bilibili Gaming (BLG) team, measured in minutes. The graph reveals that most games tend to last between 28 to 36 minutes, with a peak frequency around the 30-minute mark. This suggests that BLG typically ends their games within the expected duration for competitive matches.
+@fig-blg-game-duration depicts the distribution of game durations for the Bilibili Gaming (BLG) team, measured in minutes. The graph reveals that most games tend to last between 28 to 36 minutes, with a peak frequency around the 30-minute mark. This suggests that BLG typically ends their games within the expected duration for competitive matches.
 
 \newpage
 
@@ -305,7 +307,7 @@ ggplot(gold_damage_data, aes(x = playername, y = value, fill = metric)) +
 
 ```
 
-The boxplots @fig-blg-gold-damage compare the total gold earned and damage to champions by each player on the Bilibili Gaming (BLG) team, offering insights into their in-game contributions and roles.
+@fig-blg-gold-damage compare the total gold earned and damage to champions by each player on the Bilibili Gaming (BLG) team, offering insights into their in-game contributions and roles.
 
 Key observations highlight that Elk, the ADC, consistently earns the most gold and deals the highest damage to champions. This reflects the ADC role's reliance on gold to build damage-focused items and their critical role in team fights. However, Wei stands out by earning a comparatively high amount of gold while contributing less damage, suggesting a potential mismatch between resource allocation and damage output. This could indicate a focus on tank or utility-oriented champions or inefficiency in converting gold into impactful performance.
 
@@ -319,7 +321,7 @@ The goal of our modelling strategy is twofold. Firstly, we aim to accurately pre
 
 ## Precaution for Building Model
 
-According to the KDA formula in cleaned data section @sec-cleaned-data, the response variable KDA is directly depend on three attributes, kills, deaths and assists, so we cannot use kills, deaths and assists as predictors in our model formula Since the response variable is mathematically derived from these three attributes, including kills, deaths, and assists as predictors in the model would create perfect multicollinearity. This means the predictors would have a deterministic relationship with the response variable, violating the assumption of independence between the predictors and the response variable in regression models. For a Bayesian model, this also violates the assumption that the prior information (or likelihood) is not over-specified. In Bayesian inference, incorporating variables that deterministically define the response variable introduces redundancy and inflates the certainty of the posterior distribution, making the model overly confident and prone to poor generalization.
+According to the KDA formula in @sec-cleaned-data, the response variable KDA is directly depend on three attributes, kills, deaths and assists, so we cannot use kills, deaths and assists as predictors in our model formula Since the response variable is mathematically derived from these three attributes, including kills, deaths, and assists as predictors in the model would create perfect multicollinearity. This means the predictors would have a deterministic relationship with the response variable, violating the assumption of independence between the predictors and the response variable in regression models. For a Bayesian model, this also violates the assumption that the prior information (or likelihood) is not over-specified. In Bayesian inference, incorporating variables that deterministically define the response variable introduces redundancy and inflates the certainty of the posterior distribution, making the model overly confident and prone to poor generalization.
 
 
 ## Basic Simple Linear Regresion Model
@@ -391,7 +393,7 @@ ggplot(cleaned_lol_data, aes(x = total.cs, y = KDA, color = playername)) +
 
 ```
 
-In this SLR model, the response variable is KDA and the only one predictor is the total CS. @fig-model-SLR-1 visualizes the relationship between the actual and predicted values of KDA for BLG players, based on a simple linear regression model with total cs as the sole predictor. eaach points represent individual comparisons between actual and predicted values, with the color of the dots representing different players. The red dashed line represents the line of perfect prediction, where actual values would equal predicted values.
+In this SLR model, the response variable is KDA and the only one predictor is the total CS. @fig-model-SLR-1 visualizes the relationship between the actual and predicted values of KDA for BLG players, based on a simple linear regression model with total cs as the sole predictor. each points represent individual comparisons between actual and predicted values, with the color of the dots representing different players. The red dashed line represents the line of perfect prediction, where actual values would equal predicted values.
 
 @fig-model-SLR-2 examines the relationship between total CS and KDA for BLG players, with each point representing a game and each player distinguished by color. Separate regression lines for each player highlight role-specific trends. 
 
@@ -474,7 +476,7 @@ ggplot(model_MLR_visulization_data, aes(x = KDA, y = model_MLR_KDA_predictions, 
 ```
 
 
-The plot @fig-model-MLR visualizes the results of a Multiple Linear Regression (MLR) model predicting KDA using predictors such as side, vision score, total gold, total CS, damage to champions, and game duration. The x-axis represents the actual KDA values, while the y-axis represents the predicted KDA values. Each dot corresponds to an individual game, with colors indicating different players. The red dashed line represents the perfect prediction line (y=x), where predicted values would perfectly match the actual values.
+@fig-model-MLR visualizes the results of a Multiple Linear Regression (MLR) model predicting KDA using predictors such as side, vision score, total gold, total CS, damage to champions, and game duration. The x-axis represents the actual KDA values, while the y-axis represents the predicted KDA values. Each dot corresponds to an individual game, with colors indicating different players. The red dashed line represents the perfect prediction line (y=x), where predicted values would perfectly match the actual values.
 
 The model demonstrates an improved ability to capture variance in KDA compared to a simple linear regression model, as evidenced by many points clustering closer to the red dashed line.
 
@@ -486,7 +488,7 @@ R^2 = 1 - \frac{SS_{\text{residual}}}{SS_{\text{total}}}\\
 \text{R-squared} = 0.337
 \end{align*}
 
-We could see that there is a strong improvement on the R-squared values, which mean the MLR model have better performance on illustration for the response variable but still reflects limited predictive accuracy, as only 33.7% of the variance in the KDA is explained by the MLR model.
+There is a strong improvement on the R-squared values, which mean the MLR model have better performance on illustration for the response variable but still reflects limited predictive accuracy, as only 33.7% of the variance in the KDA is explained by the MLR model.
 
 
 ## Bayesian Model
@@ -534,7 +536,7 @@ bayesian_model_1 <- readRDS(here("models/bayesian_model_1.rds"))
 pp_check(bayesian_model_1)
 ```
 
-@fig-bayesian-model The posterior predictive check (PPC) plot compares the observed KDA distribution $y$(dark blue line) with the posterior predictive distributions $y_{rep}$(lighter blue lines) generated by the Bayesian model. The alignment between the observed and predictive distributions suggests that the model captures the central tendencies and overall variability of KDA effectively. The peak and general shape of the observed distribution are closely mirrored by the simulated predictions, indicating that the included predictors—vision score, total gold, total CS, damage to champions, position and game length are relevant in explaining the main patterns in KDA.
+In @fig-bayesian-model, the posterior predictive check (PPC) plot compares the observed KDA distribution $y$ (dark blue line) with the posterior predictive distributions $y_{rep}$ (lighter blue lines) generated by the Bayesian model. The alignment between the observed and predictive distributions suggests that the model captures the central tendencies and overall variability of KDA effectively. The peak and general shape of the observed distribution are closely mirrored by the simulated predictions, indicating that the included predictors—vision score, total gold, total CS, damage to champions, position and game length are relevant in explaining the main patterns in KDA.
 
 However, the model shows slight underperformance in capturing extreme values, as evidenced by discrepancies in the tails of the distributions.
 
@@ -580,11 +582,7 @@ r_squared <- 1 - (ss_residual / ss_total)
 # R-Squared: 0.6281344
 ```
 
-```{r}
-#| echo: false
-#| warning: false
-print(r_squared)
-```
+
 
 \begin{align}
 SS_{\text{total}} = \sum_{i=1}^{n} \left( y_i - \bar{y} \right)^2\\
@@ -602,13 +600,16 @@ Where:\
     \item \( SS_{\text{residual}} \) is the sum of squared residuals.
 \end{itemize}
 
-An \( R^2 \) value of 0.6281 indicates that the Bayesian model explains approximately 62.8% of the variability in the test dataset's KDA values. This suggests that the predictors used in the model—such as vision score, total gold, total CS, damage to champions, and the random effects—capture a substantial portion of the variation in KDA. The \( R^2 \) value show the bayesian model has strong improvement compare to previous SLR and MLR model.
+An $R^{2}$ value of 0.6281 indicates that the Bayesian model explains approximately 62.8% of the variability in the test dataset's KDA values. This suggests that the predictors used in the model—such as vision score, total gold, total CS, damage to champions, and the random effects—capture a substantial portion of the variation in KDA. The $R^{2}$ value show the bayesian model has strong improvement compare to previous SLR and MLR model.
 
 ```{r}
 #| label: fig-bayesian-model-actual-predict
 #| fig-cap: "The Bayesian Model Accurately Predicts the Testing Dataset"
 #| echo: false
 #| warning: false
+#| fig-height: 8
+#| fig-width: 20
+
 plot(test_data$KDA, colMeans(predictions), 
      xlab = "Actual players KDA", 
      ylab = "Predicted players KDA", 
@@ -632,16 +633,16 @@ plot(colMeans(predictions), residuals,
 abline(h = 0, col = "red")
 ```
 
-In addition, the residual plot @fig-bayesian-model-residual is fairly centered around zero with no major trend, suggesting that the model is not heavily biased in its predictions. 
+In addition, the residual plot in @fig-bayesian-model-residual is fairly centered around zero with no major trend, suggesting that the model is not heavily biased in its predictions. 
 
 In conclusion, from the visual checks from the predicted vs. actual plot and the residual plot, there is no robust evidence that the Bayesian model is overfitting. It appears to generalize well to the data it was trained on without showing signs of capturing noise or irrelevant patterns.  
 
 
 
 ## Model justification
-We chose  vision score, total gold, total CS, damage to champions, position and game length as key in-game metrics and contextual variability to predict KDA. The visualizations @fig-blg-visionscore highlight significant relationships between predictors and performance. For instance, vision score, which varies widely among players, particularly supports like ON, reflects role-specific contributions to team performance, justifying its inclusion as a fixed effect. Similarly, metrics such as total gold and damage to champions, shown to vary by role (e.g., Elk consistently excelling as an ADC) in @fig-blg-gold-damage, emphasize the importance of resource generation and damage output in predicting KDA. Including these predictors ensures that the model captures individual player contributions effectively.
+We chose  vision score, total gold, total CS, damage to champions, position and game length as key in-game metrics and contextual variability to predict KDA. The visualizations in @fig-blg-visionscore highlight significant relationships between predictors and performance. For instance, vision score, which varies widely among players, particularly supports like ON, reflects role-specific contributions to team performance, justifying its inclusion as a fixed effect. Similarly, metrics such as total gold and damage to champions, shown to vary by role (e.g., Elk consistently excelling as an ADC) in @fig-blg-gold-damage, emphasizing the importance of resource generation and damage output in predicting KDA. Including these predictors ensures that the model captures individual player contributions effectively.
 
-Random effects for team side, position, and game length further enhance the model by accounting for contextual variability. The histogram @fig-blg-game-duration of game durations shows that while most games last 30-35 minutes, variability exists, necessitating its inclusion to adjust for its impact on player performance. The hierarchical structure also captures differences in roles and sides, ensuring the model adapts to diverse scenarios. Overall, the chosen model balances fixed effects for key performance metrics with random effects for contextual factors, ensuring robust and accurate KDA predictions.
+Random effects for team side, position, and game length further enhance the model by accounting for contextual variability. The histogram in @fig-blg-game-duration of game durations shows that while most games last 30-35 minutes, variability exists, necessitating its inclusion to adjust for its impact on player performance. The hierarchical structure also captures differences in roles and sides, ensuring the model adapts to diverse scenarios. Overall, the chosen model balances fixed effects for key performance metrics with random effects for contextual factors, ensuring robust and accurate KDA predictions.
 
 # Result {#sec-result}
 
@@ -686,7 +687,7 @@ This plot @fig-bayesian-model-CI illustrates the posterior credible intervals fo
 
 The credible intervals vary in width across players, reflecting differences in the model's certainty about their performance. Players like Elk and Knight, who play key roles such as ADC and Mid Lane, have slightly higher predicted KDA values with credible intervals that extend across a moderate range, indicating variability in their potential performance. On the other hand, roles like Support (ON) and Jungle (Xun) also show notable ranges in their credible intervals, reflecting the dynamic nature of their contributions during games. 
 
-One thing worth mentioning is that Bin, the superstar Top Lane player of the BLG team, shows a disappointing KDA prediction within his 95% credible interval. Despite his reputation and the high expectations from media and fans, the model's prediction suggests that Bin's actual performance may not align with the hype. This could indicate that Bin is overrated by his supporters and might be more dependent on his teammates than previously thought. The data implies that Bin is often carried by his team, highlighting a significant gap between his perceived status and actual contributions. This reinforces the importance of using objective metrics to assess individual player impact rather than relying solely on public perception or narrative.
+One thing worth mentioning is that Bin, the superstar Top Lane player of the BLG team, shows a disappointing KDA prediction within his 95% credible interval. Despite his reputation and the high expectations from media and fans, the model's prediction suggests that Bin's actual performance may not align with the hype. This could indicate that Bin is overrated by his supporters and might be more dependent on his teammates than previously thought. The data implies that Bin is often carried by his team, highlighting a significant gap between his perceived status and actual contributions. This reinforces the importance of using objective metrics to assess individual player impact rather than relying solely on public perception or narrative @arevalo-ostberg_top_nodate.
 
 ```{r}
 #| label: tbl-bayesian-model-result-summary
@@ -746,22 +747,21 @@ ggplot(result_summary, aes(x = Actual_KDA, y = Predicted_KDA, color = Player_Nam
   )
 ```
 
-@fig-bayesian-model-result-CI This plot visualizes the predicted KDA values and their associated 95% credible intervals for each BLG player, compared against their actual KDA. The points represent the mean predicted KDA, color-coded by player name, while the vertical error bars show the uncertainty in the predictions (credible intervals). The red dashed line represents perfect prediction, where the predicted KDA equals the actual KDA. Most predictions cluster around the red line, indicating that the Bayesian model aligns reasonably well with the actual KDA values. However, there are notable deviations, especially in cases of high actual KDA values. These deviations are likely due to the scarcity of data for games with extremely high KDA, leading to greater uncertainty in the model's predictions for these cases. This emphasizes the importance of accounting for data imbalance in future modeling efforts.
+@fig-bayesian-model-result-CI visualizes the predicted KDA values and their associated 95% credible intervals for each BLG player, compared against their actual KDA. The points represent the mean predicted KDA, color-coded by player name, while the vertical error bars show the uncertainty in the predictions (credible intervals). The red dashed line represents perfect prediction, where the predicted KDA equals the actual KDA. Most predictions cluster around the red line, indicating that the Bayesian model aligns reasonably well with the actual KDA values. However, there are notable deviations, especially in cases of high actual KDA values. These deviations are likely due to the scarcity of data for games with extremely high KDA, leading to greater uncertainty in the model's predictions for these cases. This emphasizes the importance of accounting for data imbalance in future modeling efforts.
 
 # Discussion {#sec-discussion} 
 
 ## Ethics, Sportsmanship, and the Broader Impact of League of Legends Esports
 League of Legends (LoL) esports is more than a competitive gaming platform; it serves as a cultural and ethical touchpoint that influences players, fans, and the broader entertainment industry. The competitive environment of LoL is not only about winning games but also about fostering sportsmanship and collaboration. Professional players are expected to uphold ethical standards, demonstrating respect for opponents, referees, and fans, regardless of the game's outcome. This culture of respect and fair play is crucial, as it sets a positive example for the millions of young fans who view these players as role models. Encouraging good sportsmanship in esports reinforces values such as teamwork, discipline, and perseverance, which are important in both gaming and broader life contexts.
 
-Moreover, League of Legends esports contributes significantly to the global entertainment industry, combining intense competition with narrative-driven content to create a highly engaging spectator experience. Events like the World Championship attract millions of viewers, showcasing esports as a legitimate entertainment medium on par with traditional sports. This global reach provides opportunities to inspire young generations by emphasizing the importance of never giving up, learning from failures, and working towards personal and collective goals. By integrating ethical discussions, promoting mental resilience, and fostering an inclusive community, the League of Legends esports scene not only entertains but also educates and empowers young people to strive for excellence in gaming and beyond.
-
+Moreover, League of Legends esports contributes significantly to the global entertainment industry, combining intense competition with narrative-driven content to create a highly engaging spectator experience. Events like the World Championship attract millions of viewers, showcasing esports as a legitimate entertainment medium on par with traditional sports. This global reach provides opportunities to inspire young generations by emphasizing the importance of never giving up, learning from failures, and working towards personal and collective goals. 
 ## Summary of Findings
 
-This study develops a predictive model to assess player performance for Bilibili Gaming (BLG) in the League of Legends Pro League (LPL). The findings reveal that metrics such as vision score, total gold, total CS, damage to champions, and game side significantly contribute to predicting \( KDA \). The Bayesian mixed-effects model achieved an \( R^2 \) of 0.63, demonstrating strong predictive accuracy and capturing substantial variability in player performance.
+This study develops a predictive model to assess player performance for Bilibili Gaming (BLG) in the League of Legends Pro League (LPL). The findings reveal that metrics such as vision score, total gold, total CS, damage to champions, and game side significantly contribute to predicting \( KDA \). The Bayesian mixed-effects model achieved an $R^{2}$ of 0.63, demonstrating strong predictive accuracy and capturing substantial variability in player performance.
 
 The analysis highlights that players like Elk and Knight consistently show high predicted \( KDA \) values with narrower credible intervals, indicating strong and stable contributions. Conversely, Bin, despite having a significantly higher contract than Elk, demonstrates lower predicted performance with wide credible intervals, suggesting inconsistencies and greater reliance on teammates. This disparity between investment and contribution indicates potential inefficiencies in resource allocation. It is recommended that BLG’s management reassess contract structures and performance metrics to ensure alignment between player compensation and impact. Additionally, It is recommended that BLG’s management lower Bin's in-game priority and focus team resources on higher-impact players like Elk and Knight. This approach could help mitigate Bin’s negative impact on team performance and ensure the team’s overall strategy remains efficient and competitive. 
 
-## Sources of Bias in the Polls
+## Sources of Bias
 
 Several sources of bias may affect the findings and predictions of this study Based on the figures in @sec-data. First, the dataset relies heavily on historical in-game metrics from the League of Legends Pro League (LPL). These metrics may not fully capture all dimensions of player performance, such as intangible contributions like shot-calling, morale boosting, or adapting to unforeseen situations during matches. Consequently, the model may undervalue players who excel in these non-quantifiable aspects of gameplay.
 
@@ -780,7 +780,7 @@ Second, the model assumes a linear relationship between predictors and the respo
 Lastly, the model is trained on data from a single team, BLG, in the LPL, which could restrict its generalizability. Regional differences in playstyle, team dynamics, or meta-strategies may lead to variations in predictor-response relationships that the model is not designed to address. As a result, its applicability outside this specific context is limited.
 
 ## Limitation of the Prediction 
-In@sec-result, the predictive accuracy of the model is subject to certain constraints that impact its reliability. First, predictions are heavily influenced by historical data and may fail to account for future changes, such as meta shifts, patch updates, or evolving team strategies. Players like Bin, whose performance appears inconsistent in the current data, might improve under different conditions, but such adjustments are beyond the scope of the model's predictions.
+In @sec-result, the predictive accuracy of the model is subject to certain constraints that impact its reliability. First, predictions are heavily influenced by historical data and may fail to account for future changes, such as meta shifts, patch updates, or evolving team strategies. Players like Bin, whose performance appears inconsistent in the current data, might improve under different conditions, but such adjustments are beyond the scope of the model's predictions.
 
 Second, predictions are affected by biases and variability in the data. Factors like opponent strength, game-side advantages, and external influences (e.g., player fatigue or morale) are not fully controlled for, which can introduce noise and uncertainty. This is reflected in the broad credible intervals for some players, particularly those with inconsistent performances, limiting the precision of the forecasts.
 
@@ -828,6 +828,124 @@ ggplot(geo_line_visualization_dataset, aes(x = damagetochampions)) +
 
 ```
 
+@fig-bayesian-model-trace-plot visualizes the comparison between the actual KDA (Kill-Death-Assist ratio) and the predicted KDA based on the Bayesian model, with the x-axis representing damage dealt to champions. The solid red line represents the actual KDA trends, while the dashed blue line captures the model's predictions. The visualization indicates a general alignment between the predicted and actual KDA values, particularly for lower damage ranges, suggesting that the model captures key patterns in player performance effectively. However, as the damage to champions increases, discrepancies between the actual and predicted KDA become more pronounced, reflecting potential model limitations in extreme gameplay scenarios. This highlights areas where additional predictors or refinements may improve the model’s performance for high-damage games.
+
+\newpage
+
+# Result(Categorical response variable) by Logistics Regression Model
+
+```{r}
+#| label: fig-bayesian-logistic-regreesion-plot
+#| fig-cap: "The figure shows most of result prediction are correct"
+#| echo: false
+#| warning: false
+#| fig-height: 12
+#| fig-width: 15
+result_prediction_model = readRDS(here("models/first_win_rate_prediction_model.rds"))
+model_data = read_parquet(here("data/02-analysis_data/cleaned_lol_data.parquet"))
+predicted_probabilities <- posterior_predict(result_prediction_model, newdata = model_data)
+
+# Calculate mean probabilities for each observation
+mean_probabilities <- colMeans(predicted_probabilities)
+
+# Classify predictions
+predicted_classes <- ifelse(mean_probabilities > 0.5, 1, 0)
+
+
+# Calculate accuracy
+accuracy <- mean(predicted_classes == as.numeric(as.character(model_data$result)))
+# print(paste("Accuracy:", accuracy))
+
+model_data$predicted_class <- as.factor(predicted_classes)  # Add predicted class
+model_data$actual_class <- as.factor(as.numeric(as.character(model_data$result)))  # Convert actual class to factor
+
+model_data$combined_label <- with(model_data, ifelse(
+  actual_class == predicted_class & actual_class == "1", "Win - Correct",
+  ifelse(actual_class != predicted_class & actual_class == "1", "Win - Incorrect",
+    ifelse(actual_class == predicted_class & actual_class == "0", "Lose - Correct", "Lose - Incorrect")
+  )
+))
+
+# Plot the combined labels with different colors
+ggplot(model_data, aes(x = total.cs, y = kills, color = combined_label)) +
+  geom_point(size = 3, alpha = 0.8) +  # Scatter plot points
+  scale_color_manual(
+    values = c(
+      "Win - Correct" = "blue",
+      "Win - Incorrect" = "lightblue",
+      "Lose - Correct" = "green",
+      "Lose - Incorrect" = "red"
+    )
+  ) +
+  labs(
+    title = "Prediction Results: Win/Lose and Accuracy",
+    x = "Total CS",
+    y = "Kills",
+    color = "Prediction Result"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right")
+```
+
+@fig-bayesian-logistic-regreesion-plot illustrates the classification accuracy of a Bayesian model predicting game outcomes (win/loss) for BLG players based on total creep score (CS) and kills. Each data point represents a game, with the x-axis showing total CS and the y-axis showing kills. Points are color-coded according to the prediction results: blue for "Win - Correct," light blue for "Win - Incorrect," green for "Lose - Correct," and red for "Lose - Incorrect."
+
+The distribution reveals that most predictions align with actual results (indicated by the dominance of blue and green points), suggesting that the model performs reasonably well. However, some incorrect classifications (light blue and red points) highlight areas where the model struggles, particularly in games with extreme values of kills or CS. This discrepancy may indicate the need for additional predictors or refined modeling to capture nuances in performance and outcomes. The visualization effectively communicates the model's predictive capabilities and areas for potential improvement.
+
+
+```{r}
+#| label: fig-bayesian-logistic-win-rate-accuracy
+#| fig-cap: "the Actual Win Rate, Predicted Win Rate and Prediction Accuracy"
+#| echo: false
+#| warning: false
+
+
+# Calculate win rate and accuracy
+library(dplyr)
+library(ggplot2)
+
+# Add predicted and actual results to the dataset
+model_data$predicted_class <- as.factor(predicted_classes)  # Predicted win/loss
+model_data$actual_class <- as.factor(as.numeric(as.character(model_data$result)))  # Actual win/loss
+
+# Calculate win rate for actual and predicted
+win_rate_actual <- mean(as.numeric(as.character(model_data$result)) == 1)
+win_rate_predicted <- mean(predicted_classes == 1)
+
+# Calculate prediction accuracy
+accuracy <- mean(predicted_classes == as.numeric(as.character(model_data$result)))
+
+# Print win rate and accuracy
+# cat("Actual Win Rate:", round(win_rate_actual * 100, 2), "%\n")
+# cat("Predicted Win Rate:", round(win_rate_predicted * 100, 2), "%\n")
+# cat("Prediction Accuracy:", round(accuracy * 100, 2), "%\n")
+
+# Prepare data for visualization
+win_accuracy_data <- data.frame(
+  Metric = c("Actual Win Rate", "Predicted Win Rate", "Prediction Accuracy"),
+  Percentage = c(win_rate_actual * 100, win_rate_predicted * 100, accuracy * 100)
+)
+
+# Visualization
+ggplot(win_accuracy_data, aes(x = Metric, y = Percentage, fill = Metric)) +
+  geom_bar(stat = "identity", color = "black", width = 0.6) +
+  labs(
+    title = "Win Rate and Prediction Accuracy",
+    x = "",
+    y = "Percentage (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+```
+
+@fig-bayesian-logistic-win-rate-accuracy provides a comparison between the actual win rate, predicted win rate, and overall prediction accuracy of the model. The actual win rate represents the proportion of games that the BLG team truly won, while the predicted win rate reflects the proportion of games that the model classified as wins. The prediction accuracy illustrates how well the model aligns with the actual game outcomes, showing the percentage of correct predictions. The chart reveals that the predicted win rate is closely aligned with the actual win rate, and the prediction accuracy is relatively high, indicating that the model performs well in capturing the win/loss dynamics in the dataset. This suggests the model has practical utility for predicting match outcomes based on the available features.
+
+
+
 
 # Ideal Survey
 
@@ -848,6 +966,7 @@ The survey would adopt a stratified random sampling methodology to ensure repres
 ## Survey Implementation & Question Creation
 
 The survey would be implemented using a user-friendly online platform to ensure accessibility. Questions would be designed to address both qualitative and quantitative aspects of esports performance. For instance:
+
 - **Quantitative Questions**: Metrics-based questions, such as training hours, in-game performance statistics, and viewership demographics.
 - **Qualitative Questions**: Open-ended questions on the challenges faced by players, the impact of game patches, or perceptions of team dynamics and fan engagement.
 
@@ -918,6 +1037,7 @@ List of all of the questions:
     - Faker (T1)  
     - Uzi (RNG)  
     - Bin (BLG)
+
     - Caps (G2 Esports)  
     - Other (Please specify): __________  
     - I’m not sure / I don’t have an opinion. 
@@ -925,6 +1045,7 @@ List of all of the questions:
 7. Who do you consider to be the best Top Laner of all time in League of Legends?
     - TheShy (Weibo Gaming)  
     - Zeus (T1) 
+    
     - Marin (Retired)  
     - Nuguri (Retired)  
     - Smeb (Retired)  
